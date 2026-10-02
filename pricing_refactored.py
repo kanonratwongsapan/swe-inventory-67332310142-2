@@ -47,7 +47,11 @@ def _apply_coupon(total, coupon, today):
     elif coupon == "HALF":
         return total * 0.5
     elif coupon == "NEWYEAR":
-        current_date = datetime.date.today() if today is None else today
+        current_date = (
+            datetime.datetime.now(datetime.timezone.utc).date()
+            if today is None
+            else today
+        )
         if current_date.month == 1:
             return total * 0.8
 
@@ -66,8 +70,7 @@ def calc(items, member=None, coupon=None, today=None):
     total = _apply_coupon(total, coupon, today)
 
     # 4. ตรวจสอบไม่ให้ยอดติดลบ
-    if total < 0:
-        total = 0
+    total = max(total, 0)
 
     # 5. บวกภาษีและปัดเศษ 2 ตำแหน่ง
     total = total + (total * TAX_RATE)
