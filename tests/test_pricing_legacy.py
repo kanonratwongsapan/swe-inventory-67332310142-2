@@ -1,5 +1,5 @@
 import pytest
-import pricing_legacy as p
+import pricing_refactored as p
 
 
 @pytest.fixture(autouse=True)
@@ -31,3 +31,33 @@ def test_calc_member_updates_points():
 
 def test_calc_coupon_save50():
     assert p.calc([("Apple", 10, 10)], coupon="SAVE50") == 53.5
+
+import datetime
+
+
+def test_calc_coupon_half():
+    # ทดสอบคูปอง HALF (ลด 50%)
+    # ยอด 10 * 10 = 100 -> เหลือ 50 -> บวก VAT 7% = 53.5
+    assert p.calc([("Apple", 10, 10)], coupon="HALF") == 53.5
+
+
+def test_calc_coupon_newyear_in_january():
+    # ทดสอบคูปอง NEWYEAR ในเดือนมกราคม (ลด 20%)
+    # ยอด 10 * 10 = 100 -> เหลือ 80 -> บวก VAT 7% = 85.6
+    jan_date = datetime.date(2026, 1, 15)
+    assert p.calc([("Apple", 10, 10)], coupon="NEWYEAR", today=jan_date) == 85.6
+
+
+def test_calc_coupon_newyear_outside_january_and_default_today():
+    # 1. ทดสอบ NEWYEAR นอกเดือนมกราคม (ไม่ลด)
+    feb_date = datetime.date(2026, 2, 1)
+    assert p.calc([("Apple", 10, 10)], coupon="NEWYEAR", today=feb_date) == 107.0
+
+    # 2. ทดสอบ NEWYEAR แบบไม่ส่ง today (โค้ดจะดึง datetime.date.today() มาใช้)
+    res = p.calc([("Apple", 10, 10)], coupon="NEWYEAR")
+    assert isinstance(res, float)
+
+
+def test_calc_negative_total_floors_to_zero():
+    # ทดสอบกรณียอดติดลบจากคูปอง SAVE50 (ซื้อ 10 บาท แต่ลด 50 บาท -> ติดลบ -> ปรับเป็น 0)
+    assert p.calc([("Apple", 1, 10)], coupon="SAVE50") == 0.0
